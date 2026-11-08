@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DocK — Quais LAVL</title>
+<style>
+:root{
+  --bg:#eef1f5; --panel:#fff; --ink:#1b2430; --mute:#6b7685; --line:#d5dbe3;
+  --teal:#0f9690; --orange:#f39222; --pink:#f4a6c8; --blue:#1565c0;
+  --free:#ffffff; --ok:#22a35a; --nc:#d93030; --hs:#9aa3ad;
+  --wall:#4a5563; --bar:#2b3440;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;background:var(--bar);color:#fff}
+.logo{font-weight:800;font-size:22px;letter-spacing:.5px}.logo b{color:#4fd1c5}
+.sub{font-size:12px;opacity:.75}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{padding:5px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#ffffff1a;display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid #0003}
+.hbtn{background:#ffffff1f;border:1px solid #ffffff33;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+.hbtn:hover{background:#ffffff33}
+#search{border-radius:8px;border:none;padding:7px 10px;width:150px;font-size:13px}
+#clock{font-variant-numeric:tabular-nums;font-weight:700}
+#sync{font-size:12px}
+html,body{height:100%}
+body{display:flex;flex-direction:column}
+main{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px 12px 0}
+.yardwrap{flex:1;min-height:420px;display:flex;background:var(--panel);border-radius:14px 14px 0 0;padding:12px 12px 0;box-shadow:0 1px 3px #0001;overflow-x:auto}
+.yard{flex:1;display:flex;align-items:stretch;width:max-content;min-width:100%}
+.group{display:flex;flex:none}
+.row{display:flex;flex:1}
+.gap{flex:0 0 28px;display:flex;flex-direction:column;justify-content:flex-end}
+.gap .wallseg{height:40px;background:var(--wall)}
+.dock{flex:0 0 var(--dw,120px);width:var(--dw,120px);display:flex;flex-direction:column}
+/* camion dessiné en CSS : il s'étire sur toute la hauteur */
+.truck{--fill:#fff;--st:#5b6673;--tx:#8a95a3;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;background:none;border:none;padding:0 12px;position:relative}
+.truck.s-vert{--fill:#2fb36a;--st:#167a42;--tx:#fff}
+.truck.s-rouge{--fill:#e04040;--st:#8f1a1a;--tx:#fff}
+.truck.s-hs{--fill:#c9cfd6;--st:#7c8590;--tx:#4a5563}
+.cab{width:70%;height:calc(var(--dw,120px)*.55);flex:none;background:var(--fill);border:2.5px solid var(--st);border-radius:9px 9px 4px 4px;position:relative}
+.cab::before{content:"";position:absolute;left:8px;right:8px;top:7px;height:28%;border-radius:3px;background:#9fb3c8}
+.cab::after{content:"";position:absolute;left:-9px;right:-9px;top:45%;height:28%;border-left:7px solid #2b3440;border-right:7px solid #2b3440}
+.hitch{width:14%;height:10px;flex:none;background:var(--st)}
+.trailer{flex:1;width:100%;min-height:0;background:var(--fill);border:2.5px solid var(--st);border-bottom-width:6px;border-radius:4px 4px 2px 2px;position:relative}
+.trailer::after{content:"";position:absolute;left:-9px;right:-9px;bottom:8%;height:14%;max-height:90px;border-left:7px solid #2b3440;border-right:7px solid #2b3440}
+.truck:hover .trailer,.truck:hover .cab{box-shadow:0 0 0 3px #0f969055}
+.truck:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.truck.hl .trailer,.truck.hl .cab{box-shadow:0 0 0 4px #1565c0}
+.tl{position:absolute;inset:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--tx);pointer-events:none;overflow:hidden;text-align:center}
+.tl .code{font-size:calc(var(--dw,120px)*.2);font-weight:900;letter-spacing:1px;background:#fff;color:var(--ink);border-radius:8px;padding:2px 10px;line-height:1.2}
+.tl .ref{font-weight:800;font-size:calc(var(--dw,120px)*.115);line-height:1.15;word-break:break-all;max-width:100%}
+.tl .big{font-weight:800;font-size:calc(var(--dw,120px)*.15);letter-spacing:1.5px;opacity:.75}
+.tl .sm{font-size:calc(var(--dw,120px)*.1);font-weight:700;opacity:.9}
+.tl .tm{font-size:calc(var(--dw,120px)*.12);font-weight:800;background:#0005;color:#fff;border-radius:6px;padding:2px 8px}
+.tl .tm.warn{background:var(--orange)}.tl .tm.alert{background:#7a0000;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.4}}
+.tl .badge{white-space:nowrap;font-size:calc(var(--dw,120px)*.095);font-weight:800;background:#fff;color:var(--ink);border-radius:5px;padding:1px 6px}
+.tl .badge.nc{color:#a61f1f}
+#tip{position:fixed;z-index:40;background:#1b2430;color:#fff;border-radius:10px;padding:10px 12px;font-size:13px;box-shadow:0 10px 30px #0006;pointer-events:none;display:none;max-width:340px}
+#tip h4{margin:0 0 6px;font-size:14px}
+#tip dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
+#tip dt{color:#9fb0c3}#tip dd{margin:0;font-weight:600;word-break:break-word}
+.zoom{display:flex;gap:4px}
+.tag{font-size:11px;text-align:center;color:var(--mute);height:22px;line-height:1.05;overflow:hidden;padding:2px 1px 0;flex:none}
+.num{flex:none;background:var(--bar);color:#fff;text-align:center;font-weight:800;font-size:20px;padding:10px 0 12px;border-left:1px solid #ffffff22}
+.dock.st-vert .num{background:var(--ok)}
+.dock.st-rouge .num{background:var(--nc)}
+.dock.st-hs .num{background:var(--hs)}
+/* modal */
+.ov{position:fixed;inset:0;background:#0b1220aa;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.ov.open{display:flex}
+.modal{background:var(--panel);border-radius:16px;width:min(520px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 50px #0005}
+.mh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.mh h2{margin:0;font-size:18px}
+.mh .pill{margin-left:auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff}
+.mb{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.lbl{font-size:12px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;padding:11px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:700}
+.seg button.on{border-color:var(--blue);background:#e8f0fc;color:var(--blue)}
+.seg.yn button.on.y{border-color:var(--ok);background:#e5f6ec;color:#167a42}
+.seg.yn button.on.n{border-color:var(--nc);background:#fde8e8;color:#a61f1f}
+input[type=text],textarea,select{width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--line);font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:64px;resize:vertical}
+select[size]{padding:4px}
+.btn{padding:11px 18px;border-radius:10px;border:none;font-weight:800}
+.btn.p{background:var(--blue);color:#fff}.btn.p:disabled{background:#b6c3d4;cursor:not-allowed}
+.btn.g{background:#e9edf2;color:var(--ink)}
+.btn.teal{background:var(--teal);color:#fff}.btn.teal:disabled{background:#a9cfcd;cursor:not-allowed}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.red{background:var(--nc);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}.btn.ok:disabled{background:#a9d4bb;cursor:not-allowed}
+.link{background:none;border:none;color:var(--mute);text-decoration:underline;font-size:12px;padding:0;align-self:flex-start}
+.steps{display:flex;flex-direction:column;gap:6px}
+.step{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;user-select:none}
+.step input{width:20px;height:20px;accent-color:var(--ok)}
+.step .n{width:28px;height:28px;border-radius:50%;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;font-size:13px}
+.step.chk{border-color:#9bd4b2;background:#f2fbf5}
+.q{font-weight:800;font-size:15px}
+.info{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.info dt{color:var(--mute)}.info dd{margin:0;font-weight:600}
+.alertbox{background:#fde8e8;border:1.5px solid #f3b4b4;color:#8a1c1c;border-radius:10px;padding:10px;font-size:14px}
+.okbox{background:#e5f6ec;border:1.5px solid #a6dcbc;color:#14653a;border-radius:10px;padding:10px;font-size:14px}
+.hint{font-size:12px;color:var(--mute)}
+.ev{font-size:12px;color:var(--mute);border-left:3px solid var(--line);padding-left:8px}
+/* panels */
+.wide{width:min(1100px,100%)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#f5f7fa;font-size:12px}
+.tbl{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--bar);color:#fff;padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none}
+.toast.show{opacity:1}
+@media (max-width:640px){header{padding:10px}#search{width:110px}.chips{margin-left:0}main{padding:10px}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="logo">Doc<b>K</b></div><div class="sub">LAVL · 330 rue Saulnier · Quais 2 → 30</div></div>
+  <div class="chips" id="stats"></div>
+  <input id="search" type="text" placeholder="Chercher VRID…">
+  <button class="hbtn" id="bHist">Historique</button>
+  <button class="hbtn" id="bVrid">VRIDs</button>
+  <span class="zoom"><button class="hbtn" id="zm" title="Camions plus petits">−</button><button class="hbtn" id="zf" title="Ajuster à l’écran">⤢</button><button class="hbtn" id="zp" title="Camions plus grands">+</button></span>
+  <button class="hbtn" id="bUser">👤 <span id="uName">—</span></button>
+  <span id="sync" class="chip"></span>
+  <span id="clock" class="chip"></span>
+</header>
+<main>
+  <div class="yardwrap"><div class="yard" id="yard"></div></div>
+</main>
+<div id="tip"></div>
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbyBfBTgvSHWLyCbEhzSPFYOg-NCoMNxn_OD8kOiX2Fi9jyaxfePXYu3RbrH-KpyFPDo/exec',          // URL de déploiement Apps Script (laisser vide = mode local)
+  API_KEY: 'Dock20272027@',          // même clé que dans Code.gs
+  POLL_MS: 10000,       // rafraîchissement état partagé
+  VRID_POLL_MS: 60000,  // rafraîchissement liste VRID (Station One)
+  WARN_MIN: 60,         // durée à quai → orange
+  ALERT_MIN: 120        // durée à quai → rouge clignotant
+};
+
+/* ================= DONNÉES STATIQUES ================= */
+const GROUPS = [
+  {name:'INBOUND',  from:2,  to:10, op:'DECHARGEMENT'},
+  {name:'OUTBOUND', from:11, to:23, op:'CHARGEMENT'},
+  {name:'INBOUND',  from:24, to:30, op:'DECHARGEMENT'}
+];
+const TAGS = {17:'Trash',18:'Trash',19:'Carton',20:'AMZ RC/Carts',21:'AMZ RC/Carts',22:'Pallets trailers',23:'Pallets trailers'};
+const PHASES = {
+  SECU:{title:'Sécurisation',color:'var(--teal)',q:'Les 6 étapes de sécurisation sont-elles respectées ?',steps:[
+    [1,'Vérifiez le stationnement'],[2,'Inspectez la remorque'],[3,'Vérifiez les cales de roue'],
+    [4,'Observez le verrou Gladhand'],[5,'Sécurisez la clé du verrou'],[6,'Activez la remorque']]},
+  OUV:{title:'Ouverture',color:'var(--orange)',q:'Les 4 étapes d’ouverture sont-elles respectées ?',steps:[
+    [7,'Ouvrez la porte du quai'],[8,'Installez le niveleur'],[9,'Allumez le feu de quai'],[10,'Allumez le feu vert']]},
+  LIB:{title:'Libération',color:'var(--blue)',q:'Les 4 étapes de libération sont-elles respectées ?',steps:[
+    [12,'Fermez la porte du quai'],[13,'Retirez le verrou'],[14,'Retournez l’équipement'],[15,'Allumez le feu rouge']]}
+};
+const OPLBL = {CHARGEMENT:'Chargement',DECHARGEMENT:'Déchargement'};
+const DOCKS = []; GROUPS.forEach(g=>{for(let n=g.from;n<=g.to;n++)DOCKS.push(n)});
+const groupOf = n => GROUPS.find(g=>n>=g.from&&n<=g.to);
+
+/* ================= ÉTAT ================= */
+const LS='dock_lavl_v1';
+let S = {docks:{}, history:[], vrids:[], user:''};
+function lsGet(){try{const r=localStorage.getItem(LS);if(r)Object.assign(S,JSON.parse(r))}catch(e){}}
+function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+lsGet();
+DOCKS.forEach(n=>{if(!S.docks[n])S.docks[n]=freeDock()});
+function freeDock(){return {status:'libre'}}
+const now=()=>Date.now();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtT=t=>t?new Date(t).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}):'—';
+const fmtD=t=>t?new Date(t).toLocaleString('fr-CA',{dateStyle:'short',timeStyle:'short'}):'—';
+const mins=(a,b)=>Math.max(0,Math.round(((b||now())-a)/60000));
+const fmtDur=m=>m<60?m+' min':Math.floor(m/60)+'h'+String(m%60).padStart(2,'0');
+function refLabel(d){return d.type==='VRID'?d.ref:d.type==='PALETTE'?'PALETTE':(d.ref||'AUTRE')}
+
+/* ================= SYNC (Apps Script JSONP, comme ParK) ================= */
+function jsonp(params){
+  return new Promise((res,rej)=>{
+    const cb='cb_'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej('timeout')},15000);
+    function cleanup(){clearTimeout(t);delete window[cb];s.remove()}
+    window[cb]=d=>{cleanup();res(d)};
+    s.onerror=()=>{cleanup();rej('net')};
+    s.src=CONFIG.API_URL+'?'+new URLSearchParams({...params,key:CONFIG.API_KEY,callback:cb});
+    document.head.appendChild(s);
+  });
+}
+const online=()=>!!CONFIG.API_URL;
+let syncOk=null;
+function setSync(ok){syncOk=ok;renderSync()}
+function renderSync(){
+  const el=$('#sync');
+  if(!online()){el.innerHTML='<i class="dot" style="background:#aab"></i>Local';return}
+  el.innerHTML=`<i class="dot" style="background:${syncOk?'#3ddc84':syncOk===false?'#ff5252':'#ffc107'}"></i>${syncOk?'En ligne':syncOk===false?'Hors ligne':'…'}`;
+}
+async function pull(){
+  if(!online())return;
+  try{
+    const d=await jsonp({action:'get'});
+    if(!d.ok)throw d.err;
+    DOCKS.forEach(n=>{S.docks[n]=d.docks[n]||freeDock()});
+    if(Array.isArray(d.history))S.history=d.history;
+    if(Array.isArray(d.vrids))S.vrids=d.vrids;
+    lsSet();setSync(true);render();
+  }catch(e){setSync(false)}
+}
+async function pushDock(n){
+  lsSet();
+  if(!online())return;
+  try{const d=await jsonp({action:'setDock',dock:n,data:JSON.stringify(S.docks[n])});setSync(!!d.ok)}catch(e){setSync(false);toast('⚠ Sync échouée — réessai auto')}
+}
+async function pushHist(h){
+  lsSet();
+  if(!online())return;
+  try{await jsonp({action:'log',data:JSON.stringify(h)})}catch(e){setSync(false)}
+}
+/* VRIDs Station One — la source sera branchée quand le lien sera fourni.
+   Format attendu: [{vrid:'XXXX', info:'transporteur / ETA / …'}] */
+async function pullVrids(){
+  if(!online())return;
+  try{const d=await jsonp({action:'vrids'});if(d.ok&&Array.isArray(d.vrids)){S.vrids=d.vrids;lsSet()}}catch(e){}
+}
+
+/* ================= RENDU DU PLAN ================= */
+function buildYard(){
+  const y=$('#yard');let h='';
+  GROUPS.forEach((g,i)=>{
+    if(i)h+='<div class="gap"><div class="wallseg"></div></div>';
+    h+=`<div class="group" style="--n:${g.to-g.from+1}"><div class="row">`;
+    for(let n=g.from;n<=g.to;n++)h+=`<div class="dock" id="d${n}"><button class="truck" data-n="${n}" aria-label="Quai ${n}"><div class="cab"></div><div class="hitch"></div><div class="trailer"><div class="tl"></div></div></button><div class="tag">${TAGS[n]||''}</div><div class="num">${n}</div></div>`;
+    h+='</div></div>';
+  });
+  y.innerHTML=h;
+  y.querySelectorAll('.truck').forEach(b=>b.onclick=()=>openDock(+b.dataset.n));
+}
+function render(){
+  const q=$('#search').value.trim().toUpperCase();
+  let c={libre:0,vert:0,rouge:0,hs:0};
+  DOCKS.forEach(n=>{
+    const d=S.docks[n],st=d.status;c[st]++;
+    const el=$('#d'+n);el.className='dock st-'+st;
+    const b=el.querySelector('.truck');
+    let lab='';
+    if(st==='vert'||st==='rouge'){
+      const m=mins(d.checkinAt);
+      const cls=m>=CONFIG.ALERT_MIN?'alert':m>=CONFIG.WARN_MIN?'warn':'';
+      const top=st==='rouge'?`<span class="badge nc">⚠ ${({SECU:'SÉCU',OUV:'OUVERT.',LIB:'LIBÉR.'})[d.ncKey]||''}</span>`:`<span class="badge">${d.op==='CHARGEMENT'?'CHARG.':'DÉCHARG.'}</span>`;
+      lab=`${top}${d.code?`<span class="code">${esc(d.code)}</span>`:''}<span class="ref">${esc(refLabel(d))}</span><span class="tm ${cls}">${fmtDur(m)}</span>`;
+    } else if(st==='hs') lab=`<span class="big">HORS<br>SERVICE</span>${d.note?`<span class="sm">${esc(d.note)}</span>`:''}`;
+    else lab='<span class="big">LIBRE</span>';
+    b.className='truck s-'+st;
+    b.querySelector('.tl').innerHTML=lab;
+    b.removeAttribute('title');
+    b.classList.toggle('hl',!!q&&!!d.ref&&String(d.ref).toUpperCase().includes(q));
+  });
+  $('#stats').innerHTML=`<span class="chip"><i class="dot" style="background:#fff"></i>Libres ${c.libre}</span>
+   <span class="chip"><i class="dot" style="background:var(--ok)"></i>Prêts ${c.vert}</span>
+   <span class="chip" style="${c.rouge?'background:var(--nc)':''}"><i class="dot" style="background:var(--nc)"></i>Non conformes ${c.rouge}</span>
+   ${c.hs?`<span class="chip"><i class="dot" style="background:var(--hs)"></i>HS ${c.hs}</span>`:''}`;
+  $('#uName').textContent=S.user||'—';
+}
+
+/* ================= MODALES ================= */
+const ov=$('#ov'),M=$('#modal');
+function show(html,wide){M.className='modal'+(wide?' wide':'');M.innerHTML=html;ov.classList.add('open')}
+function close(){ov.classList.remove('open');M.innerHTML=''}
+ov.addEventListener('click',e=>{if(e.target===ov)close()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)}
+function head(n,title,color){return `<div class="mh"><h2>Quai ${n} · ${title}</h2><span class="pill" style="background:${color}">${groupOf(n).name}${TAGS[n]?' · '+TAGS[n]:''}</span></div>`}
+function ev(d,step,note,extra){(d.events=d.events||[]).push({t:now(),step,user:S.user||'',note:note||'',...(extra||{})})}
+
+function openDock(n){
+  const d=S.docks[n];
+  if(d.status==='libre')checkin(n);
+  else if(d.status==='vert')greenModal(n);
+  else if(d.status==='rouge')redModal(n);
+  else hsModal(n);
+}
+
+/* ---- CHECK-IN ---- */
+function checkin(n,draft){
+  const g=groupOf(n);
+  const dr=draft||{type:'VRID',ref:'',op:g.op,search:''};
+  const used=new Set(DOCKS.map(k=>S.docks[k]).filter(x=>x.type==='VRID'&&x.status!=='libre').map(x=>x.ref));
+  const RANK={arrived:0,at_station:0,in_transit:1,planned:2,completed:4};
+  const list=S.vrids.slice().sort((a,b)=>(RANK[a.statut]??3)-(RANK[b.statut]??3)).filter(v=>!used.has(v.vrid)&&(!dr.search||(v.vrid+' '+(v.code||'')+' '+(v.info||'')).toUpperCase().includes(dr.search.toUpperCase())));
+  let sub='';
+  if(dr.type==='VRID'){
+    sub=`<div><div class="lbl">VRID (Station One)</div>
+      <input type="text" id="vs" placeholder="Rechercher ou saisir un VRID…" value="${esc(dr.search)}" autocomplete="off">
+      <select id="vl" size="6" style="margin-top:6px">${list.map(v=>`<option value="${esc(v.vrid)}" ${v.vrid===dr.ref?'selected':''}>${esc(v.vrid)}${v.code?' · '+esc(v.code):''}${v.statut?' · '+esc(v.statut):v.info?' — '+esc(v.info):''}</option>`).join('')||''}</select>
+      <div class="hint">${S.vrids.length?list.length+' VRID disponible(s) · ':'Liste Station One pas encore branchée — saisis le VRID à la main. '}${dr.ref?'Sélectionné : <b>'+esc(dr.ref)+'</b>':''}</div></div>`;
+  } else if(dr.type==='AUTRE'){
+    sub=`<div><div class="lbl">Préciser</div><input type="text" id="ao" placeholder="Ex. : retour transporteur, camion vide, inspection…" value="${esc(dr.ref)}"></div>`;
+  } else sub=`<div class="okbox">Remorque de palettes — aucune référence requise.</div>`;
+  const valid=dr.type==='PALETTE'||!!dr.ref.trim();
+  show(`${head(n,'Check-in','var(--bar)')}
+   <div class="mb">
+    <div><div class="lbl">Type</div><div class="seg" id="ty">${['VRID','PALETTE','AUTRE'].map(t=>`<button data-t="${t}" class="${dr.type===t?'on':''}">${t==='PALETTE'?'Palette':t==='AUTRE'?'Autre':t}</button>`).join('')}</div></div>
+    ${sub}
+    <div><div class="lbl">Opération</div><div class="seg" id="op">${['DECHARGEMENT','CHARGEMENT'].map(o=>`<button data-o="${o}" class="${dr.op===o?'on':''}">${OPLBL[o]}</button>`).join('')}</div></div>
+    <div><div class="lbl">Opérateur</div><input type="text" id="us" placeholder="Ton nom" value="${esc(S.user)}"></div>
+    <button class="link" id="hsb">Mettre ce quai hors service</button>
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Annuler</button><button class="btn teal" id="go" ${valid?'':'disabled'}>Sécurisation →</button></div>`);
+  M.querySelectorAll('#ty button').forEach(b=>b.onclick=()=>{dr.type=b.dataset.t;dr.ref='';dr.search='';checkin(n,dr)});
+  M.querySelectorAll('#op button').forEach(b=>b.onclick=()=>{dr.op=b.dataset.o;checkin(n,dr)});
+  const vs=$('#vs'),vl=$('#vl'),ao=$('#ao'),go=$('#go');
+  if(vs){
+    vs.oninput=()=>{dr.search=vs.value;dr.ref=vs.value.trim().toUpperCase();
+      const pos=vs.selectionStart;checkin(n,dr);const v2=$('#vs');v2.focus();v2.setSelectionRange(pos,pos)};
+    vl.onchange=()=>{dr.ref=vl.value;dr.search=vl.value;checkin(n,dr)};
+    if(!draft)setTimeout(()=>vs.focus(),30);
+  }
+  if(ao)ao.oninput=()=>{dr.ref=ao.value;go.disabled=!ao.value.trim()};
+  $('#us').oninput=e=>{S.user=e.target.value.trim();lsSet();$('#uName').textContent=S.user||'—'};
+  $('#cx').onclick=close;
+  $('#hsb').onclick=()=>hsSet(n);
+  go.onclick=()=>{
+    if(!S.user){toast('Indique ton nom d’opérateur');$('#us').focus();return}
+    if(dr.type==='VRID'&&used.has(dr.ref)){toast('Ce VRID est déjà à un autre quai');return}
+    const vi=dr.type==='VRID'?S.vrids.find(v=>v.vrid===dr.ref.trim()):null;
+    const d={status:'libre',type:dr.type,ref:dr.type==='PALETTE'?'':dr.ref.trim(),info:vi?vi.info||'':'',code:vi?vi.code||'':'',meta:vi?vi:null,op:dr.op,checkinAt:now(),user:S.user,events:[]};
+    ev(d,'CHECK-IN');
+    phase(n,'SECU',d);
+  };
+}
+
+/* ---- PHASE (Sécurisation / Ouverture / Libération) ---- */
+function phase(n,key,d,state){
+  const P=PHASES[key];
+  const s=state||{chk:{},ans:null,note:''};
+  const all=P.steps.every(([k])=>s.chk[k]);
+  const okLabel={SECU:'Oui',OUV:'Oui',LIB:'Oui'}[key];
+  show(`${head(n,P.title,P.color)}
+   <div class="mb">
+    <div class="info"><dt>Référence</dt><dd>${esc(refLabel(d))}</dd><dt>Opération</dt><dd>${OPLBL[d.op]}</dd></div>
+    <div class="steps">${P.steps.map(([k,t])=>`<label class="step ${s.chk[k]?'chk':''}"><span class="n" style="background:${P.color}">${k}</span><span style="flex:1">${t}</span><input type="checkbox" data-k="${k}" ${s.chk[k]?'checked':''}></label>`).join('')}</div>
+    <div class="q">${P.q}</div>
+    <div class="seg yn"><button class="y ${s.ans==='oui'?'on':''}" data-a="oui">✔ ${okLabel}</button><button class="n ${s.ans==='non'?'on':''}" data-a="non">✖ Non</button></div>
+    ${s.ans==='non'?`<div><div class="lbl">Problème constaté (optionnel)</div><textarea id="nt" placeholder="Ex. : cale manquante, verrou défectueux…">${esc(s.note)}</textarea>
+      <div class="alertbox" style="margin-top:8px">Le camion passera en <b>ROUGE (non conforme)</b>.</div></div>`:''}
+    ${s.ans==='oui'&&key==='SECU'?'<div class="okbox">Étape suivante : <b>Ouverture</b> (7 à 10).</div>':''}
+    ${s.ans==='oui'&&key==='OUV'?`<div class="okbox">Le camion passera en <b>VERT</b> — prêt pour le ${OPLBL[d.op].toLowerCase()} (étape 11).</div>`:''}
+    ${s.ans==='oui'&&key==='LIB'?'<div class="okbox">Le quai redeviendra <b>LIBRE</b> et le passage sera enregistré dans l’historique.</div>':''}
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Annuler</button><button class="btn ${s.ans==='non'?'red':'ok'}" id="cf" ${s.ans?'':'disabled'}>Confirmer</button></div>`);
+  M.querySelectorAll('.step input').forEach(c=>c.onchange=()=>{s.chk[c.dataset.k]=c.checked;
+    if(P.steps.every(([k])=>s.chk[k]))s.ans='oui';else if(s.ans==='oui')s.ans=null;phase(n,key,d,s)});
+  M.querySelectorAll('.yn button').forEach(b=>b.onclick=()=>{s.ans=b.dataset.a;if(s.ans==='oui')P.steps.forEach(([k])=>s.chk[k]=true);phase(n,key,d,s)});
+  const nt=$('#nt');if(nt)nt.oninput=()=>s.note=nt.value;
+  $('#cx').onclick=close;
+  $('#cf').onclick=()=>{
+    const failed=P.steps.filter(([k])=>!s.chk[k]).map(([k])=>k);
+    if(s.ans==='oui'){
+      ev(d,key+' OK');
+      if(key==='SECU'){d.secuAt=now();phase(n,'OUV',d);return}
+      if(key==='OUV'){d.status='vert';d.readyAt=now();d.ncPhase='';commit(n,d);close();toast(`Quai ${n} prêt ✔`);return}
+      if(key==='LIB'){release(n,d,'LIBÉRÉ');close();toast(`Quai ${n} libéré`);return}
+    } else {
+      ev(d,key+' NON CONFORME',s.note,{failed});
+      d.status='rouge';d.ncPhase=P.title;d.ncKey=key;d.ncFailed=failed;d.ncNote=s.note;d.ncAt=now();
+      d.ncCount=(d.ncCount||0)+1;
+      commit(n,d);close();toast(`Quai ${n} non conforme ✖`);
+    }
+  };
+}
+function commit(n,d){S.docks[n]=d;render();pushDock(n)}
+function release(n,d,outcome){
+  d.releasedAt=now();ev(d,outcome);
+  const h={id:n+'-'+d.checkinAt,dock:n,type:d.type,ref:refLabel(d),op:d.op,user:d.user,
+    checkinAt:d.checkinAt,readyAt:d.readyAt||null,releasedAt:d.releasedAt,dur:mins(d.checkinAt,d.releasedAt),
+    nc:d.ncCount||0,outcome,events:d.events};
+  S.history.unshift(h);S.history=S.history.slice(0,1000);
+  S.docks[n]=freeDock();render();pushDock(n);pushHist(h);
+}
+
+/* ---- QUAI VERT ---- */
+function greenModal(n){
+  const d=S.docks[n];
+  show(`${head(n,OPLBL[d.op]+' en cours','var(--ok)')}
+   <div class="mb">
+    <dl class="info"><dt>Type</dt><dd>${d.type}</dd><dt>Référence</dt><dd>${esc(refLabel(d))}</dd>${d.code?`<dt>Code</dt><dd>${esc(d.code)}</dd>`:''}${d.info?`<dt>Station One</dt><dd>${esc(d.info)}</dd>`:''}
+     <dt>Check-in</dt><dd>${fmtT(d.checkinAt)} · ${esc(d.user)}</dd><dt>Prêt depuis</dt><dd>${fmtT(d.readyAt)} (${fmtDur(mins(d.readyAt))})</dd>
+     <dt>Temps à quai</dt><dd>${fmtDur(mins(d.checkinAt))}</dd>${d.ncCount?`<dt>Non-conformités</dt><dd style="color:var(--nc)">${d.ncCount}</dd>`:''}</dl>
+    <div class="steps"><div class="step chk"><span class="n" style="background:var(--pink);color:#6b2146">11</span><span style="flex:1">Chargez ou déchargez</span>⏱</div></div>
+    ${evList(d)}
+    <button class="link" id="ann">Annuler ce check-in (erreur de saisie)</button>
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn blue" id="lib">Libération →</button></div>`);
+  $('#cx').onclick=close;
+  $('#lib').onclick=()=>{if(!S.user)return toast('Indique ton nom (👤 en haut)');phase(n,'LIB',JSON.parse(JSON.stringify(d)))};
+  $('#ann').onclick=()=>cancelCheckin(n);
+}
+/* ---- QUAI ROUGE ---- */
+function redModal(n){
+  const d=S.docks[n];const P=PHASES[d.ncKey]||PHASES.SECU;
+  const failedTxt=(d.ncFailed||[]).map(k=>{const s=P.steps.find(x=>x[0]===k);return s?k+'. '+s[1]:k}).join('<br>');
+  show(`${head(n,'Non conforme','var(--nc)')}
+   <div class="mb">
+    <div class="alertbox"><b>${esc(P.title)} non respectée</b> — ${fmtT(d.ncAt)}${failedTxt?'<br><br>Étapes non cochées :<br>'+failedTxt:''}${d.ncNote?'<br><br>Note : '+esc(d.ncNote):''}</div>
+    <dl class="info"><dt>Référence</dt><dd>${esc(refLabel(d))}</dd><dt>Opération</dt><dd>${OPLBL[d.op]}</dd><dt>Check-in</dt><dd>${fmtT(d.checkinAt)} · ${esc(d.user)}</dd></dl>
+    ${evList(d)}
+    <button class="link" id="ann">Annuler ce check-in (camion parti / erreur)</button>
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn teal" id="re" style="background:${P.color}">Reprendre : ${P.title} →</button></div>`);
+  $('#cx').onclick=close;
+  $('#re').onclick=()=>{if(!S.user)return toast('Indique ton nom (👤 en haut)');phase(n,d.ncKey||'SECU',JSON.parse(JSON.stringify(d)))};
+  $('#ann').onclick=()=>cancelCheckin(n);
+}
+function cancelCheckin(n){
+  show(`${head(n,'Annuler le check-in','var(--bar)')}<div class="mb"><div>Le quai redeviendra libre. Le passage sera gardé dans l’historique comme <b>ANNULÉ</b>.</div>
+   <div><div class="lbl">Raison</div><input type="text" id="rs" placeholder="Ex. : mauvais quai, erreur de VRID…"></div></div>
+   <div class="mf"><button class="btn g" id="cx">Retour</button><button class="btn red" id="ok">Confirmer</button></div>`);
+  $('#cx').onclick=()=>openDock(n);
+  $('#ok').onclick=()=>{const d=JSON.parse(JSON.stringify(S.docks[n]));ev(d,'ANNULATION',$('#rs').value);release(n,d,'ANNULÉ');close();toast('Check-in annulé')};
+}
+function evList(d){
+  if(!d.events||!d.events.length)return '';
+  return `<div><div class="lbl">Journal</div>${d.events.map(e=>`<div class="ev">${fmtT(e.t)} · <b>${esc(e.step)}</b>${e.user?' · '+esc(e.user):''}${e.note?' — '+esc(e.note):''}</div>`).join('')}</div>`;
+}
+/* ---- HORS SERVICE ---- */
+function hsSet(n){
+  show(`${head(n,'Hors service','var(--hs)')}<div class="mb"><div><div class="lbl">Raison</div><input type="text" id="rs" placeholder="Ex. : niveleur brisé, porte bloquée…"></div></div>
+   <div class="mf"><button class="btn g" id="cx">Annuler</button><button class="btn p" id="ok">Confirmer</button></div>`);
+  $('#cx').onclick=close;
+  $('#ok').onclick=()=>{commit(n,{status:'hs',note:$('#rs').value,hsAt:now(),user:S.user});close()};
+}
+function hsModal(n){
+  const d=S.docks[n];
+  show(`${head(n,'Hors service','var(--hs)')}<div class="mb"><dl class="info"><dt>Depuis</dt><dd>${fmtD(d.hsAt)}</dd><dt>Par</dt><dd>${esc(d.user||'—')}</dd><dt>Raison</dt><dd>${esc(d.note||'—')}</dd></dl></div>
+   <div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn ok" id="ok">Remettre en service</button></div>`);
+  $('#cx').onclick=close;
+  $('#ok').onclick=()=>{commit(n,freeDock());close();toast(`Quai ${n} remis en service`)};
+}
+
+/* ---- HISTORIQUE ---- */
+function histModal(f){
+  f=f||{q:'',day:new Date().toISOString().slice(0,10)};
+  const rows=S.history.filter(h=>(!f.day||new Date(h.checkinAt).toISOString().slice(0,10)===f.day)&&(!f.q||(h.ref+' '+h.dock+' '+h.user).toUpperCase().includes(f.q.toUpperCase())));
+  const avg=rows.filter(r=>r.outcome==='LIBÉRÉ');const am=avg.length?Math.round(avg.reduce((a,r)=>a+r.dur,0)/avg.length):0;
+  show(`<div class="mh"><h2>Historique des passages</h2><span class="pill" style="background:var(--bar)">${rows.length} passage(s) · moy. ${fmtDur(am)} · ${rows.filter(r=>r.nc).length} avec NC</span></div>
+   <div class="mb">
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="date" id="hd" value="${f.day}" style="padding:9px;border-radius:10px;border:1.5px solid var(--line)"><input type="text" id="hq" placeholder="Filtrer VRID, quai, opérateur…" value="${esc(f.q)}" style="flex:1;min-width:160px"></div>
+    <div class="tbl"><table><thead><tr><th>Quai</th><th>Type</th><th>Référence</th><th>Opération</th><th>Check-in</th><th>Prêt</th><th>Libéré</th><th>Durée</th><th>NC</th><th>Statut</th><th>Opérateur</th></tr></thead>
+    <tbody>${rows.map(h=>`<tr><td><b>${h.dock}</b></td><td>${h.type}</td><td>${esc(h.ref)}</td><td>${OPLBL[h.op]||''}</td><td>${fmtT(h.checkinAt)}</td><td>${fmtT(h.readyAt)}</td><td>${fmtT(h.releasedAt)}</td><td>${fmtDur(h.dur)}</td><td style="color:${h.nc?'var(--nc)':'inherit'}">${h.nc||''}</td><td>${h.outcome}</td><td>${esc(h.user)}</td></tr>`).join('')||'<tr><td colspan="11" style="color:var(--mute)">Aucun passage</td></tr>'}</tbody></table></div>
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn p" id="csv">Exporter CSV</button></div>`,true);
+  $('#cx').onclick=close;
+  $('#hd').onchange=e=>histModal({...f,day:e.target.value});
+  $('#hq').oninput=e=>{const p=e.target.selectionStart;histModal({...f,q:e.target.value});const i=$('#hq');i.focus();i.setSelectionRange(p,p)};
+  $('#csv').onclick=()=>{
+    const head=['Date','Quai','Type','Référence','Opération','Check-in','Prêt','Libéré','Durée (min)','Non-conformités','Statut','Opérateur','Journal'];
+    const lines=rows.map(h=>[new Date(h.checkinAt).toLocaleDateString('fr-CA'),h.dock,h.type,h.ref,OPLBL[h.op]||'',fmtT(h.checkinAt),fmtT(h.readyAt),fmtT(h.releasedAt),h.dur,h.nc,h.outcome,h.user,
+      (h.events||[]).map(e=>fmtT(e.t)+' '+e.step+(e.note?' ('+e.note+')':'')).join(' | ')]);
+    const csv='﻿'+[head,...lines].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`DocK_LAVL_${f.day||'tout'}.csv`;a.click();
+  };
+}
+/* ---- VRIDs (manuel en attendant Station One) ---- */
+function vridModal(){
+  show(`<div class="mh"><h2>Liste VRID</h2><span class="pill" style="background:var(--bar)">${S.vrids.length} VRID</span></div>
+   <div class="mb">
+    <div class="hint">${online()?'Mise à jour automatique depuis Station One toutes les '+CONFIG.VRID_POLL_MS/1000+' s.':'Mode local : colle ici les VRID (un par ligne, format « VRID ; CODE ; infos », ex. « 11ABCD2EF ; INLV ; FedEx ETA 06:30 »). La source Station One sera branchée avec le lien.'}</div>
+    <textarea id="vt" style="min-height:220px;font-family:ui-monospace,monospace">${esc(S.vrids.map(v=>[v.vrid,v.code||'',v.info||''].join(' ; ').replace(/( ; )+$/,'')).join('\n'))}</textarea>
+   </div>
+   <div class="mf"><button class="btn g" id="cx">Fermer</button>${online()?'<button class="btn g" id="rf">Rafraîchir</button>':''}<button class="btn p" id="ok">Enregistrer</button></div>`);
+  $('#cx').onclick=close;
+  if($('#rf'))$('#rf').onclick=async()=>{await pullVrids();vridModal()};
+  $('#ok').onclick=()=>{
+    S.vrids=$('#vt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const [v,c,...r]=l.split(/[;\t]/);return {vrid:v.trim().toUpperCase(),code:(c||'').trim().toUpperCase(),info:r.join(' ').trim()}});
+    lsSet();close();toast(S.vrids.length+' VRID enregistrés');
+  };
+}
+function userModal(){
+  show(`<div class="mh"><h2>Opérateur</h2></div><div class="mb"><input type="text" id="us" placeholder="Ton nom" value="${esc(S.user)}"></div>
+   <div class="mf"><button class="btn p" id="ok">OK</button></div>`);
+  setTimeout(()=>$('#us').focus(),30);
+  $('#ok').onclick=()=>{S.user=$('#us').value.trim();lsSet();render();close()};
+}
+
+/* ---- Infobulle au survol : toutes les infos (Station One + suivi) ---- */
+const LBL={info:'Infos',origine:'Origine',statut:'Statut S1',categorie:'Catégorie',execution:'Exécution',vrid:'VRID',code:'Code',carrier:'Transporteur',eta:'ETA',status:'Statut',pallets:'Palettes',packages:'Colis'};
+function tipHTML(n){
+  const d=S.docks[n];
+  if(d.status==='libre')return `<h4>Quai ${n} · Libre</h4><div style="color:#9fb0c3">Clique pour faire le check-in</div>`;
+  if(d.status==='hs')return `<h4>Quai ${n} · Hors service</h4><dl><dt>Raison</dt><dd>${esc(d.note||'—')}</dd><dt>Depuis</dt><dd>${fmtD(d.hsAt)}</dd></dl>`;
+  const rows=[['Type',d.type],['Référence',refLabel(d)],['Code',d.code],['Opération',OPLBL[d.op]],['Check-in',fmtT(d.checkinAt)+' · '+(d.user||'')],
+    ['Prêt',d.readyAt?fmtT(d.readyAt):''],['Temps à quai',fmtDur(mins(d.checkinAt))]];
+  if(d.status==='rouge')rows.push(['Non conforme',(PHASES[d.ncKey]||{}).title+(d.ncNote?' — '+d.ncNote:'')]);
+  const meta=d.meta||{};
+  Object.keys(meta).filter(k=>!['vrid','code'].includes(k)&&meta[k]!==''&&meta[k]!=null).forEach(k=>rows.push([LBL[k]||k,typeof meta[k]==='object'?JSON.stringify(meta[k]):/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(meta[k])?fmtD(meta[k]):meta[k]]));
+  if(!d.meta&&d.info)rows.push(['Infos',d.info]);
+  return `<h4>Quai ${n}</h4><dl>${rows.filter(r=>r[1]).map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`;
+}
+const tip=$('#tip');
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest&&e.target.closest('.truck');
+  if(!t||ov.classList.contains('open')){tip.style.display='none';return}
+  tip.innerHTML=tipHTML(+t.dataset.n);tip.style.display='block';
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  let x=e.clientX+16,y=e.clientY+16;
+  if(x+w>innerWidth-8)x=e.clientX-w-16; if(y+h>innerHeight-8)y=innerHeight-h-8;
+  tip.style.left=x+'px';tip.style.top=y+'px';
+});
+/* ---- Taille des camions ---- */
+let DW=140;try{DW=+localStorage.getItem('dock_dw')||140}catch(e){}
+function setDW(v){DW=Math.max(60,Math.min(260,Math.round(v)));document.documentElement.style.setProperty('--dw',DW+'px');try{localStorage.setItem('dock_dw',DW)}catch(e){}}
+function fitDW(){const w=$('.yardwrap').clientWidth-24-56;setDW(w/DOCKS.length)}
+
+/* ================= INIT ================= */
+$('#bHist').onclick=()=>histModal();
+$('#bVrid').onclick=vridModal;
+$('#bUser').onclick=userModal;
+$('#search').oninput=render;
+function tick(){$('#clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}
+setDW(DW);$('#zm').onclick=()=>setDW(DW-20);$('#zp').onclick=()=>setDW(DW+20);$('#zf').onclick=fitDW;
+buildYard();render();renderSync();tick();
+setInterval(tick,10000);
+setInterval(()=>{if(!ov.classList.contains('open'))render()},30000);
+if(online()){pull();pullVrids();setInterval(()=>{if(!ov.classList.contains('open'))pull()},CONFIG.POLL_MS);setInterval(pullVrids,CONFIG.VRID_POLL_MS)}
+window.addEventListener('storage',e=>{if(e.key===LS){lsGet();render()}});
+</script>
+</body>
+</html>
