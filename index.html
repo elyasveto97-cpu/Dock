@@ -199,7 +199,7 @@ function jsonp(params){
   });
 }
 const online=()=>!!CONFIG.API_URL;
-let syncOk=null;
+let syncOk=null,lastErr='';
 function setSync(ok){syncOk=ok;renderSync()}
 function renderSync(){
   const el=$('#sync');
@@ -210,12 +210,12 @@ async function pull(){
   if(!online())return;
   try{
     const d=await jsonp({action:'get'});
-    if(!d.ok)throw d.err;
+    if(!d.ok)throw 'Réponse Apps Script : '+JSON.stringify(d);
     DOCKS.forEach(n=>{S.docks[n]=d.docks[n]||freeDock()});
     if(Array.isArray(d.history))S.history=d.history;
     if(Array.isArray(d.vrids))S.vrids=d.vrids;
-    lsSet();setSync(true);render();
-  }catch(e){setSync(false)}
+    lsSet();lastErr='';setSync(true);render();
+  }catch(e){lastErr=e==='net'?'Le script ne répond pas (URL invalide, ou accès du déploiement pas sur « Tout le monde »).':e==='timeout'?'Pas de réponse en 15 s (Apps Script lent ou URL incorrecte).':String(e);setSync(false)}
 }
 async function pushDock(n){
   lsSet();
@@ -526,6 +526,23 @@ function fitDW(){const w=$('.yardwrap').clientWidth-24-56;setDW(w/DOCKS.length)}
 $('#bHist').onclick=()=>histModal();
 $('#bVrid').onclick=vridModal;
 $('#bUser').onclick=userModal;
+$('#sync').style.cursor='pointer';
+$('#sync').onclick=()=>{
+  const u=CONFIG.API_URL;
+  const pb=[];
+  if(!u)pb.push('API_URL est vide dans CONFIG.');
+  else{
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(u))pb.push('API_URL doit avoir la forme https://script.google.com/macros/s/…/exec (pas /dev, pas script.googleusercontent.com, rien après /exec).');
+    if(!CONFIG.API_KEY)pb.push('API_KEY est vide dans CONFIG.');
+  }
+  const test=u?u+'?action=get&key='+encodeURIComponent(CONFIG.API_KEY):'';
+  show(`<div class="mh"><h2>Diagnostic connexion</h2></div><div class="mb">
+    <dl class="info"><dt>État</dt><dd>${!u?'Local':syncOk?'En ligne':'Hors ligne'}</dd><dt>API_URL</dt><dd style="word-break:break-all">${esc(u||'—')}</dd><dt>Erreur</dt><dd>${esc(lastErr||'—')}</dd></dl>
+    ${pb.length?`<div class="alertbox">${pb.map(esc).join('<br>')}</div>`:''}
+    ${test?`<div class="hint">Test : ouvre ce lien, il doit afficher {"ok":true,"docks":…}</div><a href="${esc(test)}" target="_blank" style="word-break:break-all;font-size:12px">${esc(test)}</a>`:''}
+  </div><div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn p" id="rt">Réessayer</button></div>`);
+  $('#cx').onclick=close;$('#rt').onclick=async()=>{close();await pull()};
+};
 $('#search').oninput=render;
 function tick(){$('#clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}
 setDW(DW);$('#zm').onclick=()=>setDW(DW-20);$('#zp').onclick=()=>setDW(DW+20);$('#zf').onclick=fitDW;
