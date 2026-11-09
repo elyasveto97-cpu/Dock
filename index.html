@@ -257,7 +257,8 @@ function render(){
       const m=mins(d.checkinAt);
       const cls=m>=CONFIG.ALERT_MIN?'alert':m>=CONFIG.WARN_MIN?'warn':'';
       const top=st==='rouge'?`<span class="badge nc">⚠ ${({SECU:'SÉCU',OUV:'OUVERT.',LIB:'LIBÉR.'})[d.ncKey]||''}</span>`:`<span class="badge">${d.op==='CHARGEMENT'?'CHARG.':'DÉCHARG.'}</span>`;
-      lab=`${top}${d.code?`<span class="code">${esc(d.code)}</span>`:''}<span class="ref">${esc(refLabel(d))}</span><span class="tm ${cls}">${fmtDur(m)}</span>`;
+      const mt=d.meta||{};const gp=[mt.gaylords?mt.gaylords+' G':'',mt.palettes?mt.palettes+' P':''].filter(Boolean).join(' · ');
+      lab=`${top}${d.code?`<span class="code">${esc(d.code)}</span>`:''}<span class="ref">${esc(refLabel(d))}</span>${gp?`<span class="sm" title="Gaylords · Palettes">${gp}</span>`:''}<span class="tm ${cls}">${fmtDur(m)}</span>`;
     } else if(st==='hs') lab=`<span class="big">HORS<br>SERVICE</span>${d.note?`<span class="sm">${esc(d.note)}</span>`:''}`;
     else lab='<span class="big">LIBRE</span>';
     b.className='truck s-'+st;
@@ -301,7 +302,7 @@ function checkin(n,draft){
   if(dr.type==='VRID'){
     sub=`<div><div class="lbl">VRID (Station One)</div>
       <input type="text" id="vs" placeholder="Rechercher ou saisir un VRID…" value="${esc(dr.search)}" autocomplete="off">
-      <select id="vl" size="6" style="margin-top:6px">${list.map(v=>`<option value="${esc(v.vrid)}" ${v.vrid===dr.ref?'selected':''}>${esc(v.vrid)}${v.code?' · '+esc(v.code):''}${v.statut?' · '+esc(v.statut):v.info?' — '+esc(v.info):''}</option>`).join('')||''}</select>
+      <select id="vl" size="6" style="margin-top:6px">${list.map(v=>`<option value="${esc(v.vrid)}" ${v.vrid===dr.ref?'selected':''}>${esc(v.vrid)}${v.code?' · '+esc(v.code):''}${v.gaylords?' · '+v.gaylords+' G':''}${v.palettes?' · '+v.palettes+' P':''}${v.statut?' · '+esc(v.statut):v.info?' — '+esc(v.info):''}</option>`).join('')||''}</select>
       <div class="hint">${S.vrids.length?list.length+' VRID disponible(s) · ':'Liste Station One pas encore branchée — saisis le VRID à la main. '}${dr.ref?'Sélectionné : <b>'+esc(dr.ref)+'</b>':''}</div></div>`;
   } else if(dr.type==='AUTRE'){
     sub=`<div><div class="lbl">Préciser</div><input type="text" id="ao" placeholder="Ex. : retour transporteur, camion vide, inspection…" value="${esc(dr.ref)}"></div>`;
@@ -493,7 +494,7 @@ function userModal(){
 }
 
 /* ---- Infobulle au survol : toutes les infos (Station One + suivi) ---- */
-const S1F=[['origine','Origine'],['statut','Statut S1'],['eta','ETA'],['cpt','CPT'],['packages','Colis'],['total_container_count','Contenants'],
+const S1F=[['origine','Origine'],['statut','Statut S1'],['eta','ETA'],['cpt','CPT'],['packages','Colis'],['gaylords','Gaylords'],['gaylords_colis','Colis en gaylords'],['palettes','Palettes'],['palettes_colis','Colis en palettes'],['total_container_count','Contenants'],
   ['trailer_id','Remorque'],['equipment','Équipement'],['origin_departed_at','Départ origine'],['destination_arrived_at','Arrivé station'],
   ['delay_minutes','Retard (min)'],['remaining_km','Km restants'],['categorie','Catégorie'],['info','Infos']];
 function tipHTML(n){
@@ -528,23 +529,6 @@ function fitDW(){const w=$('.yardwrap').clientWidth-24-56;setDW(w/DOCKS.length)}
 $('#bHist').onclick=()=>histModal();
 $('#bVrid').onclick=vridModal;
 $('#bUser').onclick=userModal;
-$('#sync').style.cursor='pointer';
-$('#sync').onclick=()=>{
-  const u=CONFIG.API_URL;
-  const pb=[];
-  if(!u)pb.push('API_URL est vide dans CONFIG.');
-  else{
-    if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(u))pb.push('API_URL doit avoir la forme https://script.google.com/macros/s/…/exec (pas /dev, pas script.googleusercontent.com, rien après /exec).');
-    if(!CONFIG.API_KEY)pb.push('API_KEY est vide dans CONFIG.');
-  }
-  const test=u?u+'?action=get&key='+encodeURIComponent(CONFIG.API_KEY):'';
-  show(`<div class="mh"><h2>Diagnostic connexion</h2></div><div class="mb">
-    <dl class="info"><dt>État</dt><dd>${!u?'Local':syncOk?'En ligne':'Hors ligne'}</dd><dt>API_URL</dt><dd style="word-break:break-all">${esc(u||'—')}</dd><dt>Erreur</dt><dd>${esc(lastErr||'—')}</dd></dl>
-    ${pb.length?`<div class="alertbox">${pb.map(esc).join('<br>')}</div>`:''}
-    ${test?`<div class="hint">Test : ouvre ce lien, il doit afficher {"ok":true,"docks":…}</div><a href="${esc(test)}" target="_blank" style="word-break:break-all;font-size:12px">${esc(test)}</a>`:''}
-  </div><div class="mf"><button class="btn g" id="cx">Fermer</button><button class="btn p" id="rt">Réessayer</button></div>`);
-  $('#cx').onclick=close;$('#rt').onclick=async()=>{close();await pull()};
-};
 $('#search').oninput=render;
 function tick(){$('#clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}
 setDW(DW);$('#zm').onclick=()=>setDW(DW-20);$('#zp').onclick=()=>setDW(DW+20);$('#zf').onclick=fitDW;
