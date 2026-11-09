@@ -186,17 +186,16 @@ const fmtDur=m=>m<60?m+' min':Math.floor(m/60)+'h'+String(m%60).padStart(2,'0');
 function refLabel(d){return d.type==='VRID'?d.ref:d.type==='PALETTE'?'PALETTE':(d.ref||'AUTRE')}
 
 /* ================= SYNC (Apps Script JSONP, comme ParK) ================= */
-function jsonp(params){
-  return new Promise((res,rej)=>{
-    const cb='cb_'+Math.random().toString(36).slice(2);
-    const s=document.createElement('script');
-    const t=setTimeout(()=>{cleanup();rej('timeout')},15000);
-    function cleanup(){clearTimeout(t);delete window[cb];s.remove()}
-    window[cb]=d=>{cleanup();res(d)};
-    s.onerror=()=>{cleanup();rej('net')};
-    s.src=CONFIG.API_URL+'?'+new URLSearchParams({...params,key:CONFIG.API_KEY,callback:cb});
-    document.head.appendChild(s);
-  });
+/* Appel sans cookies (credentials:'omit') : évite le bug Google « plusieurs comptes connectés »
+   — se comporte comme une fenêtre de navigation privée */
+async function jsonp(params){
+  const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),20000);
+  try{
+    const r=await fetch(CONFIG.API_URL+'?'+new URLSearchParams({...params,key:CONFIG.API_KEY}),{credentials:'omit',redirect:'follow',signal:ctrl.signal,cache:'no-store'});
+    const txt=await r.text();
+    try{return JSON.parse(txt)}catch(e){throw 'Réponse non JSON (HTTP '+r.status+') : '+txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,160)}
+  }catch(e){throw e&&e.name==='AbortError'?'timeout':(typeof e==='string'?e:'net')}
+  finally{clearTimeout(t)}
 }
 const online=()=>!!CONFIG.API_URL;
 let syncOk=null,lastErr='';
@@ -494,7 +493,9 @@ function userModal(){
 }
 
 /* ---- Infobulle au survol : toutes les infos (Station One + suivi) ---- */
-const LBL={info:'Infos',origine:'Origine',statut:'Statut S1',categorie:'Catégorie',execution:'Exécution',vrid:'VRID',code:'Code',carrier:'Transporteur',eta:'ETA',status:'Statut',pallets:'Palettes',packages:'Colis'};
+const S1F=[['origine','Origine'],['statut','Statut S1'],['eta','ETA'],['cpt','CPT'],['packages','Colis'],['total_container_count','Contenants'],
+  ['trailer_id','Remorque'],['equipment','Équipement'],['origin_departed_at','Départ origine'],['destination_arrived_at','Arrivé station'],
+  ['delay_minutes','Retard (min)'],['remaining_km','Km restants'],['categorie','Catégorie'],['info','Infos']];
 function tipHTML(n){
   const d=S.docks[n];
   if(d.status==='libre')return `<h4>Quai ${n} · Libre</h4><div style="color:#9fb0c3">Clique pour faire le check-in</div>`;
@@ -503,7 +504,8 @@ function tipHTML(n){
     ['Prêt',d.readyAt?fmtT(d.readyAt):''],['Temps à quai',fmtDur(mins(d.checkinAt))]];
   if(d.status==='rouge')rows.push(['Non conforme',(PHASES[d.ncKey]||{}).title+(d.ncNote?' — '+d.ncNote:'')]);
   const meta=d.meta||{};
-  Object.keys(meta).filter(k=>!['vrid','code'].includes(k)&&meta[k]!==''&&meta[k]!=null).forEach(k=>rows.push([LBL[k]||k,typeof meta[k]==='object'?JSON.stringify(meta[k]):/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(meta[k])?fmtD(meta[k]):meta[k]]));
+  S1F.forEach(([k,l])=>{const v=meta[k];if(v===''||v==null||v==='0'&&k==='delay_minutes'||k==='info')return;
+    rows.push([l,/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)?fmtD(v):String(v).replace('FIFTY_THREE_FOOT_TRUCK','53 pieds')])});
   if(!d.meta&&d.info)rows.push(['Infos',d.info]);
   return `<h4>Quai ${n}</h4><dl>${rows.filter(r=>r[1]).map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`;
 }
